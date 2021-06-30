@@ -30,6 +30,6 @@ CLI Access:aws s3 ls s3://ai2-semanticscholar-cord-19/ --no-sign-request
 ## Infrastructure    
 The intention is to have all the piping done using the Infrastructure-as-Code paradigm using Python within Jupyer notebooks for easy readability.    
 The following diagram describe at high level the infrastructure deployed.    
-![](cord19-project-high-level_01.png)    
+![](images/cord19-project-high-level_01.png)    
 
 
