@@ -27,6 +27,11 @@ Amazon Resource Name (ARN): arn:aws:s3:::ai2-semanticscholar-cord-19
 AWS Region: us-west-2    
 CLI Access:aws s3 ls s3://ai2-semanticscholar-cord-19/ --no-sign-request     
 
+## Content   
+This project contains:    
+1. Infrastructure: 01_infrastructure_setup.ipynb
+2. Exploratory Data Analysis: 02_exploratory_data_analysis.ipynb
+
 ## Infrastructure    
 The intention is to have all the piping done using the Infrastructure-as-Code paradigm using Python within Jupyer notebooks for easy readability.    
 The following diagram describe at high level the infrastructure deployed.    
