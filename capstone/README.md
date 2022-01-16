@@ -4,7 +4,7 @@
 
 The intention of this project is to provide a fertile ground for experimentation with creating machine learning data pipelines.    
 This project will be an opportunity to achieve the following:     
-- Get exposure to as many frameworks, libraries and methodologies as possible
+- Get exposure to as many frameworks, libraries and methodologies as possible given the time constraint
 - How to create a complete end to end and production worthy machine learning data pipeline
 - How to allow built-in flexibility to changing most of the components of a machine learning data pipeline
 - How to allow for a growing real-life, dynamic and live dataset
