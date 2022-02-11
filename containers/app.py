@@ -1,6 +1,7 @@
 
 import pickle
 import numpy as np
+import sklearn
 from flask import Flask, request
 
 model = None
