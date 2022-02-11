@@ -1,73 +1,67 @@
-from datetime import datetime, timedelta
+
+import datetime
+
 from airflow import DAG
+from airflow.providers.amazon.aws.operators.redshift_sql import RedshiftSQLOperator
+from airflow.operators.dummy import DummyOperator
+from airflow.operators.redshift_to_s3_operator import RedshiftToS3Transfer
+from airflow.providers.amazon.aws.transfers.redshift_to_s3 import RedshiftToS3Operator
 from airflow.models import Variable
-from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators.bash_operator import BashOperator
-from airflow.operators.postgres_operator import PostgresOperator
 
 
-from cord19_load_data_into_redshift_operator import LoadDataIntoRedshiftOperator
-
-default_args = {
-    'owner': 'dantohe',
-    'depends_on_past': False,
-    'email_on_retry': False,
-    'retries': 0,
-    'retry_delay': timedelta(minutes=3),
-    'catchup': False,
-    'start_date': datetime(2021, 1, 1)
-    # 'queue': 'bash_queue',
-    # 'pool': 'backfill',
-    # 'priority_weight': 10,
-    # 'end_date': datetime(2016, 1, 1),
-    # 'wait_for_downstream': False,
-    # 'dag': dag,
-    # 'sla': timedelta(hours=2),
-    # 'execution_timeout': timedelta(seconds=300),
-    # 'on_failure_callback': some_function,
-    # 'on_success_callback': some_other_function,
-    # 'on_retry_callback': another_function,
-    # 'sla_miss_callback': yet_another_function,
-    # 'trigger_rule': 'all_success'
-}
-
-dag = DAG(
-    'cord19_ml_processor_dag',
-    default_args=default_args,
-    description='Creates an ML pipeline for processing the CORD19 corpus',
-    schedule_interval='@once',
-    max_active_runs=1)
-
-# STEP 0: START ==========================================================
-start_operator = DummyOperator(
-    task_id='begin_execution', 
-    dag=dag)
-# ========================================================================
-
-# STEP 1: STAGE IN REDSHIFT ==============================================
-load_data_into_redshift_operator = LoadDataIntoRedshiftOperator(
+with DAG(
+    dag_id="CORD19_PROCESSING",
+    start_date=datetime.datetime(2020, 2, 2),
+    schedule_interval=None,
+    catchup=False,
+    tags=['example'],
+) as dag:
+    start = DummyOperator(task_id='start')
+    end = DummyOperator(task_id='end')
+    get_version = RedshiftSQLOperator(
+        task_id='get_version',
+        redshift_conn_id="redshift_db",
+        sql="""
+            select version();
+        """,
+    )
+    drop_external_schema_if_exists = RedshiftSQLOperator(
+        task_id='drop_schema',
+        redshift_conn_id="redshift_db",
+        sql="drop schema if exists "+ Variable.get('redshift_destination_external_schema_name') +" ;",
+    )
+    create_external_schema_pointing_to_datalake = RedshiftSQLOperator(
+        task_id='create_external_schema_pointing_to_datalake',
+        redshift_conn_id="redshift_db",
+        sql=f"create external schema {Variable.get('redshift_destination_external_schema_name')} \
+            from data catalog database  '{Variable.get('redshift_destination_glue_database_name')}' \
+            iam_role '{Variable.get('redshift_role_arn')}' \
+            create external database if not exists;",
+    )
+    drop_redshift_native_table_if_exists = RedshiftSQLOperator(
+        task_id='drop_redshift_native_table_if_exists',
+        redshift_conn_id="redshift_db",
+        sql=f"drop table if exists public.{Variable.get('redshift_destination_table_name')};"
+    )
+    create_redshift_native_table = RedshiftSQLOperator(
+        task_id='create_redshift_native_table',
+        redshift_conn_id="redshift_db",
+        sql=f"create table public.{Variable.get('redshift_destination_table_name')} \
+            as select * from \
+            {Variable.get('redshift_destination_external_schema_name')}.{Variable.get('redshift_destination_table_name')} ;"
+    )
+    unload_raw_data_to_s3 = RedshiftToS3Operator(
+        task_id='unload_raw_data_to_s3',
+        schema='public',
+        table=Variable.get('redshift_destination_table_name'),
+        s3_bucket=Variable.get('s3_staging_bucket'),
+        s3_key="data/raw",
+        redshift_conn_id='redshift_db',
+        unload_options = ['CSV','parallel off', 'ALLOWOVERWRITE']
+    )
     
-    task_id='load_cord19_data_into_redshif',
-    redshift_destination_conn_id='redshift_dw',
-    redshift_destination_db=Variable.get('redshift_db'),
-    redshift_destination_table_name=Variable.get('redshift_destination_table_name'),
-    redshift_destination_external_schema_name=Variable.get('redshift_destination_external_schema_name'),
-    redshift_destination_glue_database_name=Variable.get('redshift_destination_glue_database_name'),
-    iam_role=Variable.get('redshift_role_arn'),
-    region=Variable.get('my_region'),
-    dag=dag)
 
-# ========================================================================
-
-# ========================================================================
-
-# STEP N: END ============================================================
-
-end_operator = DummyOperator(
-    task_id='stop_execution',
-    dag=dag)
-
-# ========================================================================
-
-start_operator >> load_data_into_redshift_operator
-load_data_into_redshift_operator >> end_operator
+    start >> get_version >> drop_external_schema_if_exists >> create_external_schema_pointing_to_datalake 
+    create_external_schema_pointing_to_datalake >> drop_redshift_native_table_if_exists
+    drop_redshift_native_table_if_exists >> create_redshift_native_table >> unload_raw_data_to_s3
+    unload_raw_data_to_s3 >> end
