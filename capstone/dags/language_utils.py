@@ -70,6 +70,7 @@ def eliminate_non_english_languages():
     print("Total: {}\n".format(len(languages_in_abstratcs)))
     pprint(languages_dict)
     
+    dataframe['language'] = languages_in_abstratcs
     
     print(f'::::::: PRIOR {dataframe.shape}')
     dataframe = dataframe[dataframe['language'] == 'en'] 
