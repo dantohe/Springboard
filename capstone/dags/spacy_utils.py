@@ -33,7 +33,7 @@ import en_core_sci_md
 
 def preprocess_with_spacy():
     dataframe = pd.read_csv(Variable.get('eliminated_non_english_languages'))
-    print(f'::::::: PRIOR {dataframe.shape}')
+    print(f'::::::: PRIOR type {type(dataframe)} and shape {dataframe.shape}')
     
     punctuations = string.punctuation
     stopwords = list(STOP_WORDS)
@@ -60,7 +60,8 @@ def preprocess_with_spacy():
         my_string = [ word for word in my_string if word not in stopwords and word not in punctuations ]
         my_string = " ".join([i for i in my_string])
         return my_string
-    
+    dataframe = dataframe[(dataframe['publish_time']>'2020-01-01')]
+    tqdm.pandas()
     dataframe["title_processed"] = dataframe["title"].progress_apply(spacy_processor)
     dataframe["abstract_processed"] = dataframe["abstract"].progress_apply(spacy_processor)
     print(f'::::::: AFTER {dataframe.shape}')

@@ -92,11 +92,18 @@ with DAG(
     eliminate_papers_older_than_01_01_2020 = PythonOperator(
         task_id='eliminate_papers_older_than_01_01_2020',  python_callable=eliminate_papers_older_than_01_01_2020
     )
+    put_preprocessed_data_into_s3 = PythonOperator(
+        task_id='put_preprocessed_data_into_s3',  python_callable=put_preprocessed_data_into_s3
+    )
+    
     eliminate_non_english_languages = PythonOperator(
         task_id='eliminate_non_english_languages',  python_callable=eliminate_non_english_languages
     )
     preprocess_with_spacy = PythonOperator(
         task_id='preprocess_with_spacy',  python_callable=preprocess_with_spacy
+    )
+    put_spacy_preprocessed_data_into_s3 = PythonOperator(
+        task_id='put_spacy_preprocessed_data_into_s3',  python_callable=put_spacy_preprocessed_data_into_s3
     )
     
     
@@ -108,7 +115,8 @@ with DAG(
     create_redshift_native_table >> unload_raw_data_to_s3
     unload_raw_data_to_s3 >> load_raw_data_from_s3_and_save_it_locally
     load_raw_data_from_s3_and_save_it_locally >> eliminate_empty_columns
-    eliminate_empty_columns >> eliminate_papers_older_than_01_01_2020 
-    eliminate_papers_older_than_01_01_2020 >> eliminate_non_english_languages
+    eliminate_empty_columns >> eliminate_papers_older_than_01_01_2020 >> put_preprocessed_data_into_s3
+    put_preprocessed_data_into_s3 >> eliminate_non_english_languages
     eliminate_non_english_languages >> preprocess_with_spacy
-    preprocess_with_spacy >> end
+    preprocess_with_spacy >> put_spacy_preprocessed_data_into_s3
+    put_spacy_preprocessed_data_into_s3 >> end
