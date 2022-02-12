@@ -18,6 +18,7 @@ from airflow.models import Variable
 from transfer_utils import *
 from cleanup_utils import *
 from language_utils import *
+from spacy_utils import *
 
 dt = datetime.datetime.today()
 s3 = boto3.resource('s3')
@@ -94,6 +95,9 @@ with DAG(
     eliminate_non_english_languages = PythonOperator(
         task_id='eliminate_non_english_languages',  python_callable=eliminate_non_english_languages
     )
+    preprocess_with_spacy = PythonOperator(
+        task_id='preprocess_with_spacy',  python_callable=preprocess_with_spacy
+    )
     
     
 
@@ -106,4 +110,5 @@ with DAG(
     load_raw_data_from_s3_and_save_it_locally >> eliminate_empty_columns
     eliminate_empty_columns >> eliminate_papers_older_than_01_01_2020 
     eliminate_papers_older_than_01_01_2020 >> eliminate_non_english_languages
-    eliminate_non_english_languages >> end
+    eliminate_non_english_languages >> preprocess_with_spacy
+    preprocess_with_spacy >> end
