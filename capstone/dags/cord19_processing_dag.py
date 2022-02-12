@@ -1,13 +1,35 @@
 
 import datetime
+import pandas as pd
+import io
+import os
+import boto3
+from io import BytesIO
 
 from airflow import DAG
 from airflow.providers.amazon.aws.operators.redshift_sql import RedshiftSQLOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.redshift_to_s3_operator import RedshiftToS3Transfer
+from airflow.operators.python_operator import PythonOperator
 from airflow.providers.amazon.aws.transfers.redshift_to_s3 import RedshiftToS3Operator
 from airflow.models import Variable
 
+
+from transfer_utils import *
+from cleanup_utils import *
+from language_utils import *
+
+dt = datetime.datetime.today()
+s3 = boto3.resource('s3')
+
+# 
+# 
+# 
+# 
+# DAG works
+# 
+# 
+# 
 
 with DAG(
     dag_id="CORD19_PROCESSING",
@@ -55,13 +77,33 @@ with DAG(
         schema='public',
         table=Variable.get('redshift_destination_table_name'),
         s3_bucket=Variable.get('s3_staging_bucket'),
-        s3_key="data/raw",
+        s3_key=Variable.get('unload_raw_data_to_s3_key'),
         redshift_conn_id='redshift_db',
-        unload_options = ['CSV','parallel off', 'ALLOWOVERWRITE']
+        unload_options = ['CSV','parallel off', 'ALLOWOVERWRITE', 'HEADER']
     )
     
+    load_raw_data_from_s3_and_save_it_locally = PythonOperator(
+        task_id='load_raw_data_from_s3_and_save_it_locally',  python_callable=load_raw_data_from_s3_and_save_it_locally
+    )
+    eliminate_empty_columns = PythonOperator(
+        task_id='eliminate_empty_columns',  python_callable=eliminate_empty_columns
+    )
+    eliminate_papers_older_than_01_01_2020 = PythonOperator(
+        task_id='eliminate_papers_older_than_01_01_2020',  python_callable=eliminate_papers_older_than_01_01_2020
+    )
+    eliminate_non_english_languages = PythonOperator(
+        task_id='eliminate_non_english_languages',  python_callable=eliminate_non_english_languages
+    )
+    
+    
 
-    start >> get_version >> drop_external_schema_if_exists >> create_external_schema_pointing_to_datalake 
+    start >> get_version >> drop_external_schema_if_exists 
+    drop_external_schema_if_exists >> create_external_schema_pointing_to_datalake 
     create_external_schema_pointing_to_datalake >> drop_redshift_native_table_if_exists
-    drop_redshift_native_table_if_exists >> create_redshift_native_table >> unload_raw_data_to_s3
-    unload_raw_data_to_s3 >> end
+    drop_redshift_native_table_if_exists >> create_redshift_native_table
+    create_redshift_native_table >> unload_raw_data_to_s3
+    unload_raw_data_to_s3 >> load_raw_data_from_s3_and_save_it_locally
+    load_raw_data_from_s3_and_save_it_locally >> eliminate_empty_columns
+    eliminate_empty_columns >> eliminate_papers_older_than_01_01_2020 
+    eliminate_papers_older_than_01_01_2020 >> eliminate_non_english_languages
+    eliminate_non_english_languages >> end
