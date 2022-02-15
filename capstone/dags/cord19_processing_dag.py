@@ -33,11 +33,11 @@ s3 = boto3.resource('s3')
 # 
 
 with DAG(
-    dag_id="CORD19_PROCESSING",
+    dag_id="CORD19_DATA_PRE_PROCESSING",
     start_date=datetime.datetime(2020, 2, 2),
     schedule_interval=None,
     catchup=False,
-    tags=['example'],
+    tags=['data-engeneering'],
 ) as dag:
     start = DummyOperator(task_id='start')
     end = DummyOperator(task_id='end')

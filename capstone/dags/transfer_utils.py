@@ -22,7 +22,6 @@ s3_c = boto3.client("s3")
 # 
 # 
 def load_raw_data_from_s3_and_save_it_locally():
-#     bucket, filename = "dantohe-my-experimental-iac-02", "data/raw/2/12/2022/alleninstitute_metadata_000"
     obj = s3.Object(Variable.get('s3_staging_bucket'), Variable.get('unload_raw_data_to_s3_key')+'/'+Variable.get('unload_raw_data_to_s3_filename'))
     with BytesIO(obj.get()['Body'].read()) as bio:
         df = pd.read_csv(bio)
@@ -53,4 +52,12 @@ def put_spacy_preprocessed_data_into_s3():
     print(f':::::::Dataframe was saved to s3')
     return True
 
-
+def load_preprocessed_data_from_s3_and_save_it_locally():
+    print(f":::::::object located at {Variable.get('spacy_preprocessed_s3_key')}")
+    obj = s3.Object(Variable.get('s3_staging_bucket'), Variable.get('spacy_preprocessed_s3_key'))
+    with BytesIO(obj.get()['Body'].read()) as bio:
+        df = pd.read_csv(bio)
+    print(f':::::::dataframe:\n{df.info()}')
+    df.to_csv(Variable.get('spacy_preprocessed'))
+    print(f":::::::Dataframe was saved locally at {Variable.get('spacy_preprocessed')}")
+    return True
