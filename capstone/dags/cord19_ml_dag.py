@@ -52,10 +52,39 @@ with DAG(
         task_id='verify_data',  python_callable=verify_data
     )
     
-#     put_spacy_preprocessed_data_into_s3 = PythonOperator(
-#         task_id='put_spacy_preprocessed_data_into_s3',  python_callable=put_spacy_preprocessed_data_into_s3
-#     )
     
+    vectorization_compute_sparse_matrix = PythonOperator(
+        task_id='vectorization_compute_sparse_matrix',  python_callable=vectorization_compute_sparse_matrix
+    )
+    
+    vectorization_reduce_dimensionality_with_PCA = PythonOperator(
+        task_id='vectorization_reduce_dimensionality_with_PCA',  python_callable=vectorization_reduce_dimensionality_with_PCA
+    )
+    
+    clustering_v01 = PythonOperator(
+        task_id='clustering_v01',  python_callable=clustering_v01
+    )
+    
+    tsne_v01 = PythonOperator(
+        task_id='tsne_v01',  python_callable=tsne_v01
+    )
+    
+    tsne_cluster_images = DummyOperator(task_id='tsne_cluster_images')
+    
+    latent_dirichlet_allocation_v01 = PythonOperator(
+        task_id='latent_dirichlet_allocation_v01',  python_callable=latent_dirichlet_allocation_v01
+    )
+    
+    doc2vec_transformation_v01 = PythonOperator(
+        task_id='doc2vec_transformation_v01',  python_callable=doc2vec_transformation_v01
+    )
+    further_processing_using_doc2vec_model = DummyOperator(task_id='further_processing_using_doc2vec_model')
+    
+   
     
 
-    start >> load_preprocessed_data_from_s3_and_save_it_locally >> verify_data >> end
+    start >> load_preprocessed_data_from_s3_and_save_it_locally >> verify_data >> vectorization_compute_sparse_matrix
+    vectorization_compute_sparse_matrix >> vectorization_reduce_dimensionality_with_PCA >> clustering_v01
+    clustering_v01 >> tsne_v01 >> tsne_cluster_images >> end
+    clustering_v01 >> latent_dirichlet_allocation_v01 >> end
+    verify_data >> doc2vec_transformation_v01 >> further_processing_using_doc2vec_model >> end

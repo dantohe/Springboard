@@ -85,16 +85,12 @@ with DAG(
     )
     further_processing_using_doc2vec_model = DummyOperator(task_id='further_processing_using_doc2vec_model')
     
-    
-#     put_spacy_preprocessed_data_into_s3 = PythonOperator(
-#         task_id='put_spacy_preprocessed_data_into_s3',  python_callable=put_spacy_preprocessed_data_into_s3
-#     )
-    
+   
     
 
     start >> load_preprocessed_data_from_s3_and_save_it_locally >> verify_data >> collect_small_subset
     collect_small_subset >> vectorization_compute_sparse_matrix_subset
-    vectorization_compute_sparse_matrix_subset >> vectorization_reduce_dimensionality_with_PCA_subset >> clustering_v01_subset >> tsne_v01_subset >> tsne_cluster_images
-    tsne_cluster_images >> end
+    vectorization_compute_sparse_matrix_subset >> vectorization_reduce_dimensionality_with_PCA_subset >> clustering_v01_subset
+    clustering_v01_subset >> tsne_v01_subset >> tsne_cluster_images >> end
     clustering_v01_subset >> latent_dirichlet_allocation_v01_subset >> end
     collect_small_subset >> doc2vec_transformation_v01_subset >> further_processing_using_doc2vec_model >> end
