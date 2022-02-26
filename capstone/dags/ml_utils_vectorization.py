@@ -67,7 +67,7 @@ def compute_sparse_matrix(input):
     vectorizer = TfidfVectorizer()
     return vectorizer.fit_transform(input.astype('U'))
 
-def compute_sparse_matrix_with_max(input, max_features):
+def compute_sparse_matrix_with_max(input, max_features=1500):
     vectorizer = TfidfVectorizer(max_features=max_features)
     return vectorizer.fit_transform(input.astype('U'), max_features)
 
@@ -92,10 +92,15 @@ def vectorization_reduce_dimensionality_with_PCA(df=Variable.get('spacy_preproce
     dataframe = pd.read_csv(df)
     print(f'::::::: PRIOR \n type {type(dataframe)} \n shape {dataframe.shape} \n info {dataframe.info()}')
     unique_number_of_tokens = dataframe['abstract_processed'].nunique() 
-    tfidf_matrix_with_max = compute_sparse_matrix_with_max(dataframe['abstract_processed'].values, unique_number_of_tokens)
+    print(f'::::::: 1 {str(unique_number_of_tokens)}')
+#     tfidf_matrix_with_max = compute_sparse_matrix_with_max(dataframe['abstract_processed'].values, unique_number_of_tokens)
+    tfidf_matrix_with_max = compute_sparse_matrix_with_max(dataframe['abstract_processed'].values)
+    print(f'::::::: 2 {str(tfidf_matrix_with_max)}')
 #     tfidf_matrix = compute_sparse_matrix(dataframe['abstract_processed'].values)
     pca = PCA(n_components=0.95, random_state=3)
+    print(f'::::::: 3 {pca}')
     tfidf_matrix_pcaed= pca.fit_transform(tfidf_matrix_with_max.toarray())
+    print(f'::::::: 4 {str(tfidf_matrix_pcaed)}')
     print(f':::::::The matrix {type(tfidf_matrix_pcaed)} size: {tfidf_matrix_pcaed} \n {tfidf_matrix_pcaed.shape}')
     print(f'::::::: AFTER ')
 #     TODO: save matrix to disk
@@ -113,7 +118,8 @@ def clustering_v01(df=Variable.get('spacy_preprocessed')):
     dataframe = pd.read_csv(df)
     print(f'::::::: PRIOR \n type {type(dataframe)} \n shape {dataframe.shape} \n info {dataframe.info()}')
     unique_number_of_tokens = dataframe['abstract_processed'].nunique() 
-    tfidf_matrix_with_max = compute_sparse_matrix_with_max(dataframe['abstract_processed'].values, unique_number_of_tokens)
+#     tfidf_matrix_with_max = compute_sparse_matrix_with_max(dataframe['abstract_processed'].values, unique_number_of_tokens)
+    tfidf_matrix_with_max = compute_sparse_matrix_with_max(dataframe['abstract_processed'].values)
     #     tfidf_matrix = compute_sparse_matrix(dataframe['abstract_processed'].values)
 
     # PCA
@@ -135,12 +141,14 @@ def clustering_v01_subset():
     clustering_v01(Variable.get('ml_cord19_small_subset'))
     return True
 
-def tsne_v01(df=Variable.get('spacy_preprocessed')):
+def tsne_v01(df=Variable.get('ml_data_with_kmeans_applied')):
     dataframe = pd.read_csv(df)
     k = int(Variable.get('ml_kmeans_number_of_clusters'))
     print(f'::::::: PRIOR \n type {type(dataframe)} \n shape {dataframe.shape} \n info {dataframe.info()}')
     unique_number_of_tokens = dataframe['abstract_processed'].nunique() 
-    tfidf_matrix_with_max = compute_sparse_matrix_with_max(dataframe['abstract_processed'].values, unique_number_of_tokens)
+    print(f'::::: unique_number_of_tokens {str(unique_number_of_tokens)} ')
+#     tfidf_matrix_with_max = compute_sparse_matrix_with_max(dataframe['abstract_processed'].values, unique_number_of_tokens)
+    tfidf_matrix_with_max = compute_sparse_matrix_with_max(dataframe['abstract_processed'].values)
     
     
     tsne = TSNE(verbose=1, perplexity=50)
@@ -248,7 +256,7 @@ def latent_dirichlet_allocation_v01_subset():
 
 
 
-def doc2vec_transformation_v01(df=Variable.get('spacy_preprocessed')):
+def doc2vec_transformation_v01(df=Variable.get('ml_cord19_small_subset')):
     dataframe = pd.read_csv(df)
     print(f'::::::: PRIOR \n type {type(dataframe)} \n shape {dataframe.shape} \n info {dataframe.info()}')
     list_id = list(dataframe["cord_uid"])
